@@ -8,7 +8,7 @@ use experimental qw( signatures postderef );
 use Plack::MIME;
 use Plack::Util::Accessor qw( archive );
 use Path::Tiny qw( path );
-use Archive::Libarchive qw( ARCHIVE_OK ARCHIVE_WARN );
+use Archive::Libarchive qw( ARCHIVE_WARN ARCHIVE_EOF );
 
 # ABSTRACT: Serve an archive via libarchive as a PSGI web app
 # VERSION
@@ -72,29 +72,56 @@ sub return_entry ($self, $path)
   $ar->support_format_all;
 
   my $ret = $ar->open_memory(\$self->{data});
-  return $self->return_500 unless $ret == ARCHIVE_OK;
+  if($ret == ARCHIVE_WARN)
+  {
+    warn $ar->error_string;
+  }
+  elsif($ret < ARCHIVE_WARN)
+  {
+    warn $ar->error_string;
+    return $self->return_500;
+  }
 
   my $e = Archive::Libarchive::Entry->new;
-  while($ar->next_header($e) == ARCHIVE_OK)
+  while(1)
   {
+    my $ret = $ar->next_header($e);
+    if($ret == ARCHIVE_EOF)
+    {
+      last;
+    }
+    elsif($ret == ARCHIVE_WARN)
+    {
+      warn $ar->error_string;
+    }
+    elsif($ret < ARCHIVE_WARN)
+    {
+      warn $ar->error_string;
+      return $self->return_500;
+    }
+
     if($e->pathname eq $path)
     {
       my $res = [ 200, [ 'Content-Type' => Plack::MIME->mime_type($path) ], [ '' ] ];
 
       if($e->size > 0)
       {
-        my $buffer;
-        my $ret = $ar->read_data(\$buffer);
-        if($ret == ARCHIVE_WARN)
+        while(1)
         {
-          warn $ar->error_string;
+          my $buffer;
+          my $ret = $ar->read_data(\$buffer);
+          last if $ret == 0;
+          if($ret == ARCHIVE_WARN)
+          {
+            warn $ar->error_string;
+          }
+          elsif($ret < ARCHIVE_WARN)
+          {
+            warn $ar->error_string;
+            return $self->return_500;
+          }
+          $res->[2]->[0] .= $buffer;
         }
-        elsif($ret < ARCHIVE_WARN)
-        {
-          warn $ar->error_string;
-          return $self->return_500;
-        }
-        $res->[2]->[0] .= $buffer;
       }
 
       push $res->[1]->@*, 'Content-Length' => length($res->[2]->[0]);
@@ -114,13 +141,36 @@ sub return_index ($self)
   $ar->support_format_all;
 
   my $ret = $ar->open_memory(\$self->{data});
-  return $self->return_500 unless $ret == ARCHIVE_OK;
+  if($ret == ARCHIVE_WARN)
+  {
+    warn $ar->error_string;
+  }
+  elsif($ret < ARCHIVE_WARN)
+  {
+    warn $ar->error_string;
+    return $self->return_500;
+  }
 
   my $html = "<html><head><title>@{[ $self->{title} ]}</title></head><body><ul>";
 
   my $e = Archive::Libarchive::Entry->new;
-  while($ar->next_header($e) == ARCHIVE_OK)
+  while(1)
   {
+    my $ret = $ar->next_header($e);
+    if($ret == ARCHIVE_EOF)
+    {
+      last;
+    }
+    elsif($ret == ARCHIVE_WARN)
+    {
+      warn $ar->error_string;
+    }
+    elsif($ret < ARCHIVE_WARN)
+    {
+      warn $ar->error_string;
+      return $self->return_500;
+    }
+
     my $path = $e->pathname;
     $ar->read_data_skip;
     $html .= "<li><a href=\"/$path\">$path</a></li>";
