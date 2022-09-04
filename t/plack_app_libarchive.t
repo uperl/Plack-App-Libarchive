@@ -7,6 +7,7 @@ use Test2::Tools::DOM;
 use HTTP::Request::Common;
 use Plack::Builder ();
 use Mojo::DOM58;
+use Path::Tiny qw( path );
 use URI;
 
 psgi_app_add(Plack::App::Libarchive->new(archive => 'corpus/foo.tar')->to_app);
@@ -26,6 +27,7 @@ subtest 'index' => sub {
         find 'ul li a' => [
           dom { attr href => 'foo.html'; content 'foo.html' },
           dom { attr href => 'foo.txt';  content 'foo.txt'  },
+          dom { attr href => 'shot.png'; content 'shot.png' },
         ];
       };
     },
@@ -70,9 +72,25 @@ subtest 'fetch entry' => sub {
       }
     );
 
-    note http_tx->res->as_string;
+    note http_tx->res->decoded_content;
 
   };
+
+  subtest 'shot.png' => sub {
+
+    http_request (
+      GET('/shot.png'),
+      http_response {
+        http_code 200;
+        http_content_type 'image/png';
+        http_content path('corpus/shot.png')->slurp_raw;
+      }
+    );
+
+    note http_tx->res->headers->as_string;
+
+  };
+
 };
 
 subtest '404' => sub {
@@ -122,7 +140,8 @@ subtest 'mount elsewhere' => sub {
         ];
         find 'ul li a' => [
           dom { attr href => 'foo.html' },
-          dom { attr href => 'foo.txt' },
+          dom { attr href => 'foo.txt'  },
+          dom { attr href => 'shot.png' },
         ]
       }
     }

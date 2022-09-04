@@ -15,11 +15,51 @@ This [PSGI](https://metacpan.org/pod/PSGI) application serves the content of an 
 by `libarchive` via [Archive::Libarchive](https://metacpan.org/pod/Archive::Libarchive)).  A request to the root for the
 app will return an index of the files contained within the archive.
 
+The index is generated using [Template](https://metacpan.org/pod/Template).  There is a bundled template that
+will list the entry files and link to their content.  If you want to customize
+the index you can provide your own template.  Here are the template variables
+that are available from within the template:
+
+- `archive`
+
+    A hash reference containing information about the archive
+
+- `archive.name`
+
+    The basename of the archive filename.  For example: `foo.tar.gz`.
+
+- `archive.get_next_entry`
+
+    Get the next [Archive::Libarchive::Entry](https://metacpan.org/pod/Archive::Libarchive::Entry) object from the archive.
+
+Here is the default wrapper.html.tt:
+
+\# EXAMPLE: share/wrapper.html.tt
+
+and the default archive\_index.html.tt
+
+\# EXAMPLE: archive\_index.html.tt
+
 # CONFIGURATION
 
 - archive
 
     The relative or absolute path to the archive.
+
+- tt
+
+    Instance of [Template](https://metacpan.org/pod/Template) that will be used to generate the html index.  The default
+    is:
+
+    ```perl
+    Template->new(
+      WRAPPER            => 'wrapper.html.tt',
+      INCLUDE_PATH       => File::ShareDir::Dist::dist_share('Plack-App-Libarchive'),
+      render_die         => 1,
+      TEMPLATE_EXTENSION => '.tt',
+      ENCODING           => 'utf8',
+    )
+    ```
 
 # SEE ALSO
 
