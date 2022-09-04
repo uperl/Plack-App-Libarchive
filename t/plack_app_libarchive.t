@@ -1,4 +1,5 @@
 use Test2::V0 -no_srand => 1;
+use 5.034;
 use utf8;
 use experimental qw( postderef );
 use Plack::App::Libarchive;
