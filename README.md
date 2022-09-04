@@ -34,11 +34,28 @@ that are available from within the template:
 
 Here is the default wrapper.html.tt:
 
-\# EXAMPLE: share/wrapper.html.tt
+```
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>[% archive.name %]</title>
+  </head>
+  <body>
+    [% content %]
+  </body>
+</html>
+```
 
 and the default archive\_index.html.tt
 
-\# EXAMPLE: archive\_index.html.tt
+```
+<ul>
+  [% WHILE (entry = archive.get_next_entry) %]
+    <li><a href="[% entry.pathname | uri %]">[% entry.pathname | html %]</a></li>
+  [% END %]
+</ul>
+```
 
 # CONFIGURATION
 

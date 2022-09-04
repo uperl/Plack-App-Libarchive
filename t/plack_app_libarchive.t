@@ -91,6 +91,19 @@ subtest 'fetch entry' => sub {
 
   };
 
+  subtest 'favicon.ico (default)' => sub {
+
+    http_request (
+      GET('/favicon.ico'),
+      http_response {
+        http_code 200;
+        http_content_type 'image/vnd.microsoft.icon';
+        http_content path('share/favicon.ico')->slurp_raw;
+      }
+    );
+
+  };
+
 };
 
 subtest '404' => sub {
@@ -110,8 +123,7 @@ subtest '404' => sub {
 
 subtest 'mount elsewhere' => sub {
 
-
-  psgi_app_add( 'http://mount-point.test' => do {
+  my $guard = psgi_app_add( 'http://mount-point.test' => do {
     my $builder = Plack::Builder->new;
     $builder->mount('/frooble' => Plack::App::Libarchive->new(archive => 'corpus/foo.tar')->to_app);
     $builder->to_app;
@@ -158,6 +170,23 @@ subtest 'mount elsewhere' => sub {
       }
     );
   }
+
+};
+
+subtest 'tar with favicon.ico' => sub {
+
+  my $guard = psgi_app_add( 'http://favicon.test' => Plack::App::Libarchive->new(archive => 'corpus/fav.tar')->to_app );
+
+  my $url = URI->new('http://favicon.test/favicon.ico');
+
+  http_request (
+    GET($url),
+    http_response {
+      http_code 200;
+      http_content_type 'image/vnd.microsoft.icon';
+      http_content "xxx\n";
+    }
+  );
 
 };
 
