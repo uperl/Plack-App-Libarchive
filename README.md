@@ -72,26 +72,19 @@ and the default archive\_index.html.tt
     Template->new(
       WRAPPER            => 'wrapper.html.tt',
       INCLUDE_PATH       => File::ShareDir::Dist::dist_share('Plack-App-Libarchive'),
+      DELIMITER          => ':',
       render_die         => 1,
       TEMPLATE_EXTENSION => '.tt',
       ENCODING           => 'utf8',
     )
     ```
 
-# PROPERTIES
+    On `MSWin32` a delimiter of `;` is used instead.
 
-## archive
+- tt\_include\_path
 
-String path to the archive to serve from.
-
-## tt
-
-Instance of [Template](https://metacpan.org/pod/Template) to use for generating index.
-
-## tt\_include\_path
-
-Array reference of additional [Template INCLUDE\_PATH directories](https://metacpan.org/pod/Template#INCLUDE_PATH).  This
-id useful for writing your own custom template.
+    Array reference of additional [Template INCLUDE\_PATH directories](https://metacpan.org/pod/Template#INCLUDE_PATH).  This
+    id useful for writing your own custom template.
 
 # SEE ALSO
 
