@@ -116,7 +116,10 @@ sub return_entry ($self, $path)
 
     if($e->pathname eq $path)
     {
-      my $res = [ 200, [ 'Content-Type' => Plack::MIME->mime_type($path) ], [ '' ] ];
+      my $content_type = Plack::MIME->mime_type($path);
+      $content_type .= "; charset=utf-8" if $content_type =~ /^text\/(html|plain)$/;
+
+      my $res = [ 200, [ 'Content-Type' => $content_type ], [ '' ] ];
 
       if($e->size > 0)
       {
@@ -210,7 +213,7 @@ sub return_index ($self, $env)
   }
 
   return [ 200,
-         [ 'Content-Type' => 'text/html', 'Content-Length' => length($html) ],
+         [ 'Content-Type' => 'text/html; charset=utf-8', 'Content-Length' => length($html) ],
          [ $html ]
   ]
 }

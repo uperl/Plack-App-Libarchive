@@ -1,4 +1,5 @@
 use Test2::V0 -no_srand => 1;
+use utf8;
 use experimental qw( postderef );
 use Plack::App::Libarchive;
 use Test2::Tools::HTTP;
@@ -17,6 +18,7 @@ subtest 'index' => sub {
     http_response {
       http_code 200;
       http_content_type 'text/html';
+      http_content_type_charset 'UTF-8';
       http_content dom {
         find 'title' => [
           dom { content 'foo.tar' }
@@ -24,7 +26,7 @@ subtest 'index' => sub {
         find 'ul li a' => [
           dom { attr href => 'foo.html'; content 'foo.html' },
           dom { attr href => 'foo.txt';  content 'foo.txt'  },
-        ]
+        ];
       };
     },
   );
@@ -33,19 +35,44 @@ subtest 'index' => sub {
 
 };
 
-subtest 'foo.txt' => sub {
+subtest 'fetch entry' => sub {
 
-  http_request (
-    GET('/foo.txt'),
-    http_response {
-      http_code 200;
-      http_content_type 'text/plain';
-      http_content "Hello World\n";
-    }
-  );
+  subtest 'foo.txt' => sub {
 
-  note http_tx->res->as_string;
+    http_request (
+      GET('/foo.txt'),
+      http_response {
+        http_code 200;
+        http_content_type 'text/plain';
+        http_content_type_charset 'UTF-8';
+        http_content "Hello World\n";
+      }
+    );
 
+    note http_tx->res->as_string;
+
+  };
+
+  subtest 'foo.html' => sub {
+
+    http_request (
+      GET('/foo.html'),
+      http_response {
+        http_code 200;
+        http_content_type 'text/html';
+        http_content_type_charset 'UTF-8';
+        http_content dom {
+          find 'p' => [
+            dom { content 'Hello World' },
+            dom { content '龍' },
+          ];
+        };
+      }
+    );
+
+    note http_tx->res->as_string;
+
+  };
 };
 
 subtest '404' => sub {
