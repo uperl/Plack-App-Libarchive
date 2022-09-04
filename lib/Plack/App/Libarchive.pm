@@ -26,6 +26,35 @@ This L<PSGI> application serves the content of an archive (any format supported
 by C<libarchive> via L<Archive::Libarchive>).  A request to the root for the
 app will return an index of the files contained within the archive.
 
+The index is generated using L<Template>.  There is a bundled template that
+will list the entry files and link to their content.  If you want to customize
+the index you can provide your own template.  Here are the template variables
+that are available from within the template:
+
+=over 4
+
+=item C<archive>
+
+A hash reference containing information about the archive
+
+=item C<archive.name>
+
+The basename of the archive filename.  For example: C<foo.tar.gz>.
+
+=item C<archive.get_next_entry>
+
+Get the next L<Archive::Libarchive::Entry> object from the archive.
+
+=back
+
+Here is the default wrapper.html.tt:
+
+# EXAMPLE: share/wrapper.html.tt
+
+and the default archive_index.html.tt
+
+# EXAMPLE: archive_index.html.tt
+
 =head1 CONFIGURATION
 
 =over 4
@@ -33,6 +62,19 @@ app will return an index of the files contained within the archive.
 =item archive
 
 The relative or absolute path to the archive.
+
+=item tt
+
+Instance of L<Template> that will be used to generate the html index.  The default
+is:
+
+ Template->new(
+   WRAPPER            => 'wrapper.html.tt',
+   INCLUDE_PATH       => File::ShareDir::Dist::dist_share('Plack-App-Libarchive'),
+   render_die         => 1,
+   TEMPLATE_EXTENSION => '.tt',
+   ENCODING           => 'utf8',
+ )
 
 =back
 
@@ -190,7 +232,7 @@ sub return_index ($self, $env)
 
   try
   {
-    $self->tt->process('archive_list.html.tt', {
+    $self->tt->process('archive_index.html.tt', {
       archive => {
         name           => path($self->archive)->basename,
         get_next_entry => sub {
