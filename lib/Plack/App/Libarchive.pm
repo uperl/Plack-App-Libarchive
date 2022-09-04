@@ -4,11 +4,13 @@ use strict;
 use warnings;
 use 5.020;
 use parent qw( Plack::Component );
-use experimental qw( signatures postderef );
+use experimental qw( signatures postderef try );
 use Plack::MIME;
-use Plack::Util::Accessor qw( archive );
+use Plack::Util::Accessor qw( archive tt );
 use Path::Tiny qw( path );
 use Archive::Libarchive qw( ARCHIVE_WARN ARCHIVE_EOF );
+use Template;
+use File::ShareDir::Dist qw( dist_share );
 
 # ABSTRACT: Serve an archive via libarchive as a PSGI web app
 # VERSION
@@ -52,7 +54,19 @@ sub prepare_app ($self)
 {
   my $path = path($self->archive);
   $self->{data}  = $path->slurp_raw;
-  $self->{title} = $path->basename;
+
+  unless(defined $self->tt)
+  {
+    $self->tt(
+      Template->new(
+        WRAPPER            => 'wrapper.html.tt',
+        INCLUDE_PATH       => dist_share(__PACKAGE__),
+        render_die         => 1,
+        TEMPLATE_EXTENSION => '.tt',
+        ENCODING           => 'utf8',
+      )
+    );
+  };
 }
 
 sub call ($self, $env)
@@ -168,32 +182,32 @@ sub return_index ($self, $env)
     return $self->return_500;
   }
 
-  my $html = "<html><head><title>@{[ $self->{title} ]}</title></head><body><ul>";
+  my $html = '';
+  my $entry = Archive::Libarchive::Entry->new;
 
-  my $e = Archive::Libarchive::Entry->new;
-  while(1)
+  try
   {
-    my $ret = $ar->next_header($e);
-    if($ret == ARCHIVE_EOF)
-    {
-      last;
-    }
-    elsif($ret == ARCHIVE_WARN)
-    {
-      warn $ar->error_string;
-    }
-    elsif($ret < ARCHIVE_WARN)
-    {
-      warn $ar->error_string;
-      return $self->return_500;
-    }
-
-    my $path = $e->pathname;
-    $ar->read_data_skip;
-    $html .= "<li><a href=\"$path\">$path</a></li>";
+    $self->tt->process('archive_list.html.tt', {
+      archive => {
+        name           => path($self->archive)->basename,
+        get_next_entry => sub {
+          my $ret = $ar->next_header($entry);
+          return undef if $ret == ARCHIVE_EOF;
+          warn $ar->error_string if $ret == ARCHIVE_WARN;
+          die $ar->error_string if $ret < ARCHIVE_WARN;
+          $ret = $ar->read_data_skip;
+          warn $ar->error_string if $ret == ARCHIVE_WARN;
+          die $ar->error_string if $ret < ARCHIVE_WARN;
+          return $entry;
+        },
+      }
+    }, \$html);
   }
-
-  $html .= "</ul>";
+  catch ($error)
+  {
+    warn $error;
+    return $self->return_500;
+  }
 
   return [ 200,
          [ 'Content-Type' => 'text/html', 'Content-Length' => length($html) ],

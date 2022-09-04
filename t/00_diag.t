@@ -14,14 +14,20 @@ $modules{$_} = $_ for qw(
   Archive::Libarchive
   EV
   ExtUtils::MakeMaker
+  File::ShareDir::Dist
+  File::ShareDir::Install
   HTTP::Request::Common
   Mojo::DOM58
   Path::Tiny
+  Plack::Builder
   Plack::Component
   Plack::MIME
   Plack::Util::Accessor
+  Template
+  Test2::Tools::DOM
   Test2::Tools::HTTP
   Test2::V0
+  URI
 );
 
 
