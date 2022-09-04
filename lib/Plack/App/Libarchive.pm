@@ -6,7 +6,7 @@ use 5.020;
 use parent qw( Plack::Component );
 use experimental qw( signatures postderef try );
 use Plack::MIME;
-use Plack::Util::Accessor qw( archive tt );
+use Plack::Util::Accessor qw( archive tt tt_include_path );
 use Path::Tiny qw( path );
 use Archive::Libarchive qw( ARCHIVE_WARN ARCHIVE_EOF );
 use Template;
@@ -78,6 +78,21 @@ is:
 
 =back
 
+=head1 PROPERTIES
+
+=head2 archive
+
+String path to the archive to serve from.
+
+=head2 tt
+
+Instance of L<Template> to use for generating index.
+
+=head2 tt_include_path
+
+Array reference of additional L<Template INCLUDE_PATH directories|Template/INCLUDE_PATH>.  This
+id useful for writing your own custom template.
+
 =head1 SEE ALSO
 
 =over 4
@@ -97,12 +112,21 @@ sub prepare_app ($self)
   my $path = path($self->archive);
   $self->{data}  = $path->slurp_raw;
 
+  unless(defined $self->tt_include_path)
+  {
+    $self->tt_include_path([]);
+  }
+
   unless(defined $self->tt)
   {
+    my @path = ($self->tt_include_path->@*, dist_share(__PACKAGE__));
+    my $sep  = $^O eq 'MSWin32' ? ';' : ':';
+
     $self->tt(
       Template->new(
         WRAPPER            => 'wrapper.html.tt',
-        INCLUDE_PATH       => dist_share(__PACKAGE__),
+        DELIMITER          => $sep,
+        INCLUDE_PATH       => join($sep, @path),
         render_die         => 1,
         TEMPLATE_EXTENSION => '.tt',
         ENCODING           => 'utf8',
