@@ -11,6 +11,7 @@ use Path::Tiny qw( path );
 use Archive::Libarchive qw( ARCHIVE_WARN ARCHIVE_EOF );
 use Template;
 use File::ShareDir::Dist qw( dist_share );
+use Encode qw( encode );
 
 # ABSTRACT: Serve an archive via libarchive as a PSGI web app
 # VERSION
@@ -276,6 +277,7 @@ sub return_index ($self, $env)
         },
       }
     }, \$html);
+    $html = encode('UTF-8', $html, Encode::FB_CROAK);
   }
   catch ($error)
   {
