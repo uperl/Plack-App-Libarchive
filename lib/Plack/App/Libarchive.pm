@@ -53,7 +53,7 @@ Here is the default wrapper.html.tt:
 
 and the default archive_index.html.tt
 
-# EXAMPLE: archive_index.html.tt
+# EXAMPLE: share/archive_index.html.tt
 
 =head1 CONFIGURATION
 
@@ -188,6 +188,18 @@ sub return_entry ($self, $path)
       return $res;
     }
     $ar->read_data_skip;
+  }
+
+  if($path =~ /^\/?favicon.ico$/)
+  {
+    my $content = path(dist_share(__PACKAGE__))->child('favicon.ico')->slurp_raw;
+    return [ 200,
+      [
+        'Content-Type'   => 'image/vnd.microsoft.icon',
+        'Content-Length' => length $content,
+      ],
+      [ $content ],
+    ];
   }
 
   return $self->return_404;
