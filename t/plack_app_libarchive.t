@@ -22,8 +22,8 @@ subtest 'index' => sub {
           dom { content 'foo.tar' }
         ];
         find 'ul li a' => [
-          dom { attr href => 'foo.html' },
-          dom { attr href => 'foo.txt' },
+          dom { attr href => 'foo.html'; content 'foo.html' },
+          dom { attr href => 'foo.txt';  content 'foo.txt'  },
         ]
       };
     },
