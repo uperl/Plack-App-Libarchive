@@ -71,27 +71,20 @@ is:
  Template->new(
    WRAPPER            => 'wrapper.html.tt',
    INCLUDE_PATH       => File::ShareDir::Dist::dist_share('Plack-App-Libarchive'),
+   DELIMITER          => ':',
    render_die         => 1,
    TEMPLATE_EXTENSION => '.tt',
    ENCODING           => 'utf8',
  )
 
-=back
+On C<MSWin32> a delimiter of C<;> is used instead.
 
-=head1 PROPERTIES
-
-=head2 archive
-
-String path to the archive to serve from.
-
-=head2 tt
-
-Instance of L<Template> to use for generating index.
-
-=head2 tt_include_path
+=item tt_include_path
 
 Array reference of additional L<Template INCLUDE_PATH directories|Template/INCLUDE_PATH>.  This
 id useful for writing your own custom template.
+
+=back
 
 =head1 SEE ALSO
 
