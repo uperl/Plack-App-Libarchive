@@ -59,7 +59,7 @@ sub call ($self, $env)
 {
   my $path = $env->{PATH_INFO} || '/';
   return $self->return_400 if $path =~ /\0/;
-  return $self->return_index if $path eq '/';
+  return $self->return_index($env) if $path eq '/';
   return $self->return_entry($path);
 }
 
@@ -134,8 +134,25 @@ sub return_entry ($self, $path)
   return $self->return_404;
 }
 
-sub return_index ($self)
+sub return_index ($self, $env)
 {
+  if($env->{PATH_INFO} eq '') {
+    my $url = $env->{REQUEST_URI};
+    $url =~ s/\/*$/\//;
+    if($url ne $env->{REQUEST_URI})
+    {
+      return
+        [ 301,
+          [
+            'Location'       => $url,
+            'Content-Type'   => 'text/plain',
+            'Content-Length' => 8,
+          ],
+          [ 'Redirect' ],
+        ];
+    }
+  }
+
   my $ar = Archive::Libarchive::ArchiveRead->new;
   $ar->support_filter_all;
   $ar->support_format_all;
@@ -173,7 +190,7 @@ sub return_index ($self)
 
     my $path = $e->pathname;
     $ar->read_data_skip;
-    $html .= "<li><a href=\"/$path\">$path</a></li>";
+    $html .= "<li><a href=\"$path\">$path</a></li>";
   }
 
   $html .= "</ul>";

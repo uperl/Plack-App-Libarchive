@@ -1,15 +1,12 @@
 use Test2::V0 -no_srand => 1;
+use experimental qw( postderef );
 use Plack::App::Libarchive;
 use Test2::Tools::HTTP;
+use Test2::Tools::DOM;
 use HTTP::Request::Common;
+use Plack::Builder ();
 use Mojo::DOM58;
-
-Test2::Tools::HTTP::Tx->add_helper(
-  'res.dom' => sub {
-    my($res) = @_;
-    Mojo::DOM58->new($res->decoded_content);
-  },
-);
+use URI;
 
 psgi_app_add(Plack::App::Libarchive->new(archive => 'corpus/foo.tar')->to_app);
 
@@ -20,25 +17,14 @@ subtest 'index' => sub {
     http_response {
       http_code 200;
       http_content_type 'text/html';
-      call dom => object {
-        call [find => 'title'] => object {
-          call first => object {
-            call content => 'foo.tar';
-          };
-        };
-        call [find => 'ul li a'] => object {
-          call to_array => array {
-            item object {
-              call [attr => 'href'] => '/foo.html';
-              call content => 'foo.html';
-            };
-            item object {
-              call [attr => 'href'] => '/foo.txt';
-              call content => 'foo.txt';
-            };
-            end;
-          };
-        };
+      http_content dom {
+        find 'title' => [
+          dom { content 'foo.tar' }
+        ];
+        find 'ul li a' => [
+          dom { attr href => 'foo.html' },
+          dom { attr href => 'foo.txt' },
+        ]
       };
     },
   );
@@ -74,6 +60,58 @@ subtest '404' => sub {
   );
 
   note http_tx->res->as_string;
+
+};
+
+subtest 'mount elsewhere' => sub {
+
+
+  psgi_app_add( 'http://mount-point.test' => do {
+    my $builder = Plack::Builder->new;
+    $builder->mount('/frooble' => Plack::App::Libarchive->new(archive => 'corpus/foo.tar')->to_app);
+    $builder->to_app;
+  });
+
+  my $url = URI->new('http://mount-point.test/frooble');
+
+  http_request (
+    GET($url),
+    http_response {
+      http_code 301;
+      http_header 'location', '/frooble/';
+    }
+  );
+
+  $url->path(http_tx->res->header('location'));
+
+  http_request (
+    GET($url),
+    http_response {
+      http_code 200;
+      http_content_type 'text/html';
+      http_content dom {
+        find 'title' => [
+          dom { content 'foo.tar' }
+        ];
+        find 'ul li a' => [
+          dom { attr href => 'foo.html' },
+          dom { attr href => 'foo.txt' },
+        ]
+      }
+    }
+  );
+
+  foreach my $href (map { $_->attr('href') } Mojo::DOM58->new(http_tx->res->decoded_content)->find('ul li a')->to_array->@*)
+  {
+    my $url = URI->new_abs( $href, $url );
+
+    http_request (
+      GET($url),
+      http_response {
+        http_code 200;
+      }
+    );
+  }
 
 };
 
