@@ -78,6 +78,21 @@ and the default archive\_index.html.tt
     )
     ```
 
+# PROPERTIES
+
+## archive
+
+String path to the archive to serve from.
+
+## tt
+
+Instance of [Template](https://metacpan.org/pod/Template) to use for generating index.
+
+## tt\_include\_path
+
+Array reference of additional [Template INCLUDE\_PATH directories](https://metacpan.org/pod/Template#INCLUDE_PATH).  This
+id useful for writing your own custom template.
+
 # SEE ALSO
 
 - [Archive::Libarchive](https://metacpan.org/pod/Archive::Libarchive)
