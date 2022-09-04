@@ -2,7 +2,7 @@ package Plack::App::Libarchive;
 
 use strict;
 use warnings;
-use 5.020;
+use 5.034;
 use parent qw( Plack::Component );
 use experimental qw( signatures postderef try );
 use Plack::MIME;
