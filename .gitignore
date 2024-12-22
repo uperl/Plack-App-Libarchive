@@ -2,4 +2,7 @@ Plack-App-Libarchive-*
 /.build/
 *.swp
 
-
+/Plack-App-Libarchive-*
+/.build
+*.old
+*.orig
